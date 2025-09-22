@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -13,10 +15,12 @@ def health_check(request):
     return JsonResponse({'status': 'ok', 'message': 'Budget Tracker API is running!'})
 
 # API Views
+@method_decorator(csrf_exempt, name='dispatch')
 class ExpenseListCreateAPIView(generics.ListCreateAPIView):
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ExpenseRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer

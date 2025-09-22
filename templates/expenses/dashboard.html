@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Budget Tracker - Modern Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -466,19 +467,16 @@
             income: [
                 { value: 'salary', label: 'Salary', icon: 'fas fa-briefcase' },
                 { value: 'freelance', label: 'Freelance', icon: 'fas fa-laptop-code' },
-                { value: 'business', label: 'Business', icon: 'fas fa-store' },
                 { value: 'investment', label: 'Investment', icon: 'fas fa-chart-line' },
-                { value: 'gift', label: 'Gift', icon: 'fas fa-gift' },
                 { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
             ],
             expense: [
                 { value: 'food', label: 'Food & Dining', icon: 'fas fa-utensils' },
-                { value: 'transportation', label: 'Transportation', icon: 'fas fa-car' },
+                { value: 'transport', label: 'Transportation', icon: 'fas fa-car' },
                 { value: 'shopping', label: 'Shopping', icon: 'fas fa-shopping-bag' },
                 { value: 'entertainment', label: 'Entertainment', icon: 'fas fa-film' },
                 { value: 'bills', label: 'Bills & Utilities', icon: 'fas fa-receipt' },
                 { value: 'healthcare', label: 'Healthcare', icon: 'fas fa-heartbeat' },
-                { value: 'education', label: 'Education', icon: 'fas fa-graduation-cap' },
                 { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
             ]
         };
@@ -575,7 +573,9 @@
                     loadTransactions();
                     showNotification('Transaction added successfully!', 'success');
                 } else {
-                    showNotification('Error adding transaction', 'error');
+                    const errorData = await response.text();
+                    console.error('Server error:', errorData);
+                    showNotification(`Error adding transaction: ${response.status}`, 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -701,7 +701,9 @@
                     loadTransactions();
                     showNotification('Transaction deleted successfully!', 'success');
                 } else {
-                    showNotification('Error deleting transaction', 'error');
+                    const errorData = await response.text();
+                    console.error('Delete error:', errorData);
+                    showNotification(`Error deleting transaction: ${response.status}`, 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
