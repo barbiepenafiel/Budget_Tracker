@@ -61,8 +61,7 @@ class CustomUserCreationForm(UserCreationForm):
         user.email = self.cleaned_data['email']
         if commit:
             user.save()
-            # Create login attempt tracker
-            UserLoginAttempt.objects.create(user=user)
+            # UserLoginAttempt will be created by the signal
         return user
 
 class CustomAuthenticationForm(AuthenticationForm):
