@@ -251,6 +251,11 @@
                         <p class="text-lg font-semibold" id="current-date"></p>
                     </div>
                     
+                    <!-- Direct Logout Button for Mobile -->
+                    <a href="{% url 'authentication:logout' %}" class="md:hidden flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 px-4 py-2 rounded-lg transition-all duration-300">
+                        <i class="fas fa-sign-out-alt text-red-400"></i>
+                    </a>
+                    
                     <!-- User Menu -->
                     <div class="relative" id="userMenuContainer">
                         <button id="userMenuButton" class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all duration-300">
@@ -262,7 +267,7 @@
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div id="userDropdown" class="dropdown-menu fixed right-4 sm:absolute sm:right-0 top-20 sm:top-full mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl hidden transition-all duration-300 z-50">
+                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl hidden transition-all duration-300 z-[100]">
                             <div class="p-2">
                                 <div class="px-3 py-2 border-b border-gray-700/50 mb-2">
                                     <p class="text-sm text-gray-400">Signed in as</p>
@@ -560,28 +565,36 @@
                 // Make sure dropdown is hidden on page load
                 userDropdown.classList.add('hidden');
                 
+                // Add a more visible style to make the button more noticeable
+                userMenuButton.classList.add('relative');
+                
                 userMenuButton.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation(); // Prevent event from bubbling
                     
                     // Toggle dropdown visibility
-                    const isHidden = userDropdown.classList.contains('hidden');
+                    userDropdown.classList.toggle('hidden');
                     
-                    // Close all dropdowns first
-                    const allDropdowns = document.querySelectorAll('.dropdown-menu');
-                    allDropdowns.forEach(dropdown => dropdown.classList.add('hidden'));
-                    
-                    // Then open this one if it was hidden
-                    if (isHidden) {
-                        userDropdown.classList.remove('hidden');
-                    }
+                    // Add temporary highlight to show the button was clicked
+                    userMenuButton.classList.add('ring-2', 'ring-blue-500');
+                    setTimeout(() => {
+                        userMenuButton.classList.remove('ring-2', 'ring-blue-500');
+                    }, 300);
                 });
                 
-                // Make logout link work properly
+                // Make logout link more prominent and easier to click
                 const logoutLink = userDropdown.querySelector('a[href*="logout"]');
                 if (logoutLink) {
+                    logoutLink.classList.add('font-bold', 'py-3');
+                    
+                    // Ensure the click passes through properly
                     logoutLink.addEventListener('click', function(e) {
-                        e.stopPropagation(); // Don't stop the link click itself
+                        e.stopPropagation();
+                        console.log('Logout link clicked');
+                        // Add a small delay to ensure the click registers
+                        setTimeout(() => {
+                            window.location.href = logoutLink.getAttribute('href');
+                        }, 100);
                     });
                 }
                 
@@ -597,15 +610,17 @@
         // Initialize app with database check for Vercel
         async function initializeApp() {
             try {
-                // First try to load from server (this ensures data syncs across devices)
+                // Always try to load from localStorage first for immediate display
+                await loadLocalData();
+                
+                // Then try to fetch from server to ensure cross-device syncing
                 console.log("Attempting to load data from server...");
                 const summarySuccess = await loadSummary();
                 const transactionsSuccess = await loadTransactions();
                 
                 if (!summarySuccess || !transactionsSuccess) {
-                    // If server data loading fails, fall back to localStorage
-                    console.log("Server data loading failed, falling back to localStorage");
-                    await loadLocalData();
+                    console.log("Server data loading failed, staying with localStorage data");
+                    showNotification('Using locally stored data', 'info');
                 }
                 
                 // Run health check to see if we should sync localStorage to server
@@ -615,9 +630,11 @@
                     
                     console.log('Health check response:', healthData);
                     
-                    if (healthData.status === 'ok' && healthData.expense_count === 0) {
-                        // If server has no data but we have local data, sync it up
-                        await syncLocalDataToServer();
+                    if (healthData.status === 'ok') {
+                        if (healthData.expense_count === 0) {
+                            // If server has no data but we have local data, sync it up
+                            await syncLocalDataToServer();
+                        }
                     }
                 } catch (error) {
                     console.error('Health check failed:', error);
@@ -625,8 +642,6 @@
                 }
             } catch (error) {
                 console.error('Application initialization error:', error);
-                // Final fallback - try to load from localStorage
-                await loadLocalData();
                 showNotification('Error connecting to server, using local data only', 'warning');
             }
         }
