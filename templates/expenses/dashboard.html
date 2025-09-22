@@ -252,8 +252,8 @@
                     </div>
                     
                     <!-- User Menu -->
-                    <div class="relative group">
-                        <button class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all duration-300">
+                    <div class="relative" id="userMenuContainer">
+                        <button id="userMenuButton" class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all duration-300">
                             <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                                 <i class="fas fa-user text-white text-sm"></i>
                             </div>
@@ -262,7 +262,7 @@
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 top-full mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                        <div id="userDropdown" class="absolute right-0 top-full mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl hidden transition-all duration-300 z-50">
                             <div class="p-2">
                                 <div class="px-3 py-2 border-b border-gray-700/50 mb-2">
                                     <p class="text-sm text-gray-400">Signed in as</p>
@@ -546,8 +546,29 @@
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
+            initializeUserDropdown();
             initializeApp();
         });
+        
+        // Initialize user dropdown menu with click event
+        function initializeUserDropdown() {
+            const userMenuButton = document.getElementById('userMenuButton');
+            const userDropdown = document.getElementById('userDropdown');
+            
+            if (userMenuButton && userDropdown) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    userDropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+        }
 
         // Initialize app with database check for Vercel
         async function initializeApp() {
@@ -588,13 +609,15 @@
         // Save transaction to localStorage as backup
         function saveToLocalStorage(transaction) {
             try {
-                const localTransactions = JSON.parse(localStorage.getItem('budgetTracker_transactions') || '[]');
+                const username = '{{ user.username }}';
+                const storageKey = `budgetTracker_transactions_${username}`;
+                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 localTransactions.push({
                     ...transaction,
                     id: Date.now(),
                     date_created: new Date().toISOString()
                 });
-                localStorage.setItem('budgetTracker_transactions', JSON.stringify(localTransactions));
+                localStorage.setItem(storageKey, JSON.stringify(localTransactions));
             } catch (error) {
                 console.error('Failed to save to localStorage:', error);
             }
@@ -603,7 +626,9 @@
         // Load data from localStorage
         async function loadLocalData() {
             try {
-                const localTransactions = JSON.parse(localStorage.getItem('budgetTracker_transactions') || '[]');
+                const username = '{{ user.username }}';
+                const storageKey = `budgetTracker_transactions_${username}`;
+                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 
                 if (localTransactions.length > 0) {
                     displayLocalTransactions(localTransactions);
@@ -621,7 +646,9 @@
         // Restore local data to server
         async function restoreLocalData() {
             try {
-                const localTransactions = JSON.parse(localStorage.getItem('budgetTracker_transactions') || '[]');
+                const username = '{{ user.username }}';
+                const storageKey = `budgetTracker_transactions_${username}`;
+                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 
                 if (localTransactions.length > 0) {
                     console.log('Restoring local data to server...');
@@ -735,8 +762,10 @@
                 const result = await response.json();
 
                 if (response.ok && result.status === 'success') {
-                    // Clear localStorage
-                    localStorage.removeItem('budgetTracker_transactions');
+                    // Clear localStorage with user-specific key
+                    const username = '{{ user.username }}';
+                    const storageKey = `budgetTracker_transactions_${username}`;
+                    localStorage.removeItem(storageKey);
                     
                     // Reset UI to zero state
                     resetUIToZero();
@@ -749,7 +778,9 @@
                 console.error('Reset error:', error);
                 
                 // If server fails, at least clear localStorage
-                localStorage.removeItem('budgetTracker_transactions');
+                const username = '{{ user.username }}';
+                const storageKey = `budgetTracker_transactions_${username}`;
+                localStorage.removeItem(storageKey);
                 resetUIToZero();
                 
                 showNotification('Data reset locally (server may be unavailable)', 'info');
