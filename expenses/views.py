@@ -98,10 +98,15 @@ def reset_data(request):
         
         logger.info(f"User {request.user.username} reset their data. {deleted_count} transactions deleted.")
         
+        # Force session save to ensure Vercel persistence
+        request.session.modified = True
+        request.session.save()
+        
         return Response({
             'status': 'success',
             'message': f'All your data reset successfully. {deleted_count} transactions deleted.',
-            'clear_local_storage': True
+            'clear_local_storage': True,
+            'username': request.user.username  # Include username for client-side localStorage clearing
         })
     except Exception as e:
         logger.error(f"Error resetting data for user {request.user.username}: {str(e)}")

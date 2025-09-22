@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>Budget Tracker - Modern Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="/static/js/vercel-support.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -109,26 +107,6 @@
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
-        }
-        
-        /* Custom select dropdown styling */
-        select {
-            background-color: rgb(31, 41, 55) !important;
-            color: white !important;
-        }
-        
-        select option {
-            background-color: rgb(31, 41, 55) !important;
-            color: white !important;
-            padding: 8px 12px;
-        }
-        
-        select option:hover {
-            background-color: rgb(55, 65, 81) !important;
-        }
-        
-        select option:checked {
-            background-color: rgb(59, 130, 246) !important;
         }
         
         .button-modern:hover:before {
@@ -243,30 +221,16 @@
                     </div>
                     <div>
                         <h1 class="text-3xl font-bold gradient-text">Budget Tracker</h1>
-                        <p class="text-gray-300 text-sm">Welcome back, {{ user.username }}!</p>
+                        <p class="text-gray-300 text-sm">Modern Financial Management</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-4">
                     <div class="text-right">
                         <p class="text-sm text-gray-400">Today</p>
                         <p class="text-lg font-semibold" id="current-date"></p>
                     </div>
-                    
-                    <!-- Direct Logout Button for Mobile -->
-                    <a href="{% url 'authentication:logout' %}" class="md:hidden flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 px-4 py-2 rounded-lg transition-all duration-300">
-                        <i class="fas fa-sign-out-alt text-red-400"></i>
-                    </a>
-                    
-                    <!-- User Menu -->
-                    <div class="relative" id="userMenuContainer">
-                        <a href="{% url 'authentication:logout' %}" 
-                           class="flex items-center space-x-3 bg-red-500/20 hover:bg-red-500/40 px-4 py-2 rounded-lg transition-all duration-300 border border-red-500/30">
-                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user text-white text-sm"></i>
-                            </div>
-                            <span class="text-white font-medium">{{ user.username }}</span>
-                            <i class="fas fa-sign-out-alt text-white"></i>
-                        </a>
+                    <div class="floating-icon">
+                        <i class="fas fa-chart-line text-2xl text-white/70"></i>
                     </div>
                 </div>
             </div>
@@ -382,7 +346,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <button onclick="showAddForm('income')" 
                     class="button-modern glass-morphism rounded-2xl p-6 text-left hover-lift">
                 <div class="flex items-center justify-between">
@@ -408,22 +372,6 @@
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Add Expense</h3>
                         <p class="text-gray-400">Track your spending and purchases</p>
-                    </div>
-                    <div class="floating-icon">
-                        <i class="fas fa-arrow-right text-gray-400"></i>
-                    </div>
-                </div>
-            </button>
-
-            <button onclick="resetAllData()" 
-                    class="button-modern glass-morphism rounded-2xl p-6 text-left hover-lift">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="icon-container bg-orange-500/20 p-3 rounded-xl mb-3 inline-block">
-                            <i class="fas fa-refresh text-2xl text-orange-400"></i>
-                        </div>
-                        <h3 class="text-xl font-semibold mb-2">Reset Data</h3>
-                        <p class="text-gray-400">Start fresh with clean budget</p>
                     </div>
                     <div class="floating-icon">
                         <i class="fas fa-arrow-right text-gray-400"></i>
@@ -475,7 +423,7 @@
                         <i class="fas fa-tag mr-2"></i>Description
                     </label>
                     <input type="text" id="description" name="description" required
-                           class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                           class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 </div>
                 
                 <div>
@@ -483,7 +431,7 @@
                         <i class="fas fa-peso-sign mr-2"></i>Amount
                     </label>
                     <input type="number" id="amount" name="amount" step="0.01" required
-                           class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                           class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 </div>
                 
                 <div>
@@ -491,9 +439,8 @@
                         <i class="fas fa-folder mr-2"></i>Category
                     </label>
                     <select id="category" name="category" required
-                            class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            style="color: white; background-color: rgb(31 41 55);">
-                        <option value="" style="background-color: rgb(31 41 55); color: white;">Select Category</option>
+                            class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <option value="">Select Category</option>
                     </select>
                 </div>
                 
@@ -519,430 +466,29 @@
             income: [
                 { value: 'salary', label: 'Salary', icon: 'fas fa-briefcase' },
                 { value: 'freelance', label: 'Freelance', icon: 'fas fa-laptop-code' },
+                { value: 'business', label: 'Business', icon: 'fas fa-store' },
                 { value: 'investment', label: 'Investment', icon: 'fas fa-chart-line' },
+                { value: 'gift', label: 'Gift', icon: 'fas fa-gift' },
                 { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
             ],
             expense: [
                 { value: 'food', label: 'Food & Dining', icon: 'fas fa-utensils' },
-                { value: 'transport', label: 'Transportation', icon: 'fas fa-car' },
+                { value: 'transportation', label: 'Transportation', icon: 'fas fa-car' },
                 { value: 'shopping', label: 'Shopping', icon: 'fas fa-shopping-bag' },
                 { value: 'entertainment', label: 'Entertainment', icon: 'fas fa-film' },
                 { value: 'bills', label: 'Bills & Utilities', icon: 'fas fa-receipt' },
                 { value: 'healthcare', label: 'Healthcare', icon: 'fas fa-heartbeat' },
+                { value: 'education', label: 'Education', icon: 'fas fa-graduation-cap' },
                 { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
             ]
         };
 
-        // Call checkFirstLogin when the app initializes
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
-            initializeApp();
-            checkFirstLogin();
+            loadSummary();
+            loadTransactions();
         });
-
-        // Initialize app with database check for Vercel
-        async function initializeApp() {
-            try {
-                // Always try to load from localStorage first for immediate display
-                const localDataExists = await loadLocalData();
-                
-                // Then try to fetch from server to ensure cross-device syncing
-                console.log("Attempting to load data from server...");
-                let serverDataLoaded = false;
-                
-                try {
-                    const summarySuccess = await loadSummary();
-                    const transactionsSuccess = await loadTransactions();
-                    
-                    serverDataLoaded = summarySuccess && transactionsSuccess;
-                    
-                    if (!serverDataLoaded) {
-                        console.log("Server data loading failed, staying with localStorage data");
-                        if (localDataExists) {
-                            showNotification('Using locally stored data', 'info');
-                        }
-                    } else {
-                        // If server data loaded successfully, save it to localStorage as a backup
-                        console.log("Server data loaded successfully, saving to localStorage");
-                        await syncServerDataToLocalStorage();
-                    }
-                } catch (error) {
-                    console.error("Error loading from server:", error);
-                    if (localDataExists) {
-                        showNotification('Using locally stored data', 'info');
-                    }
-                }
-                
-                // Run health check to see if we should sync localStorage to server
-                try {
-                    const healthResponse = await fetch('/health/');
-                    const healthData = await healthResponse.json();
-                    
-                    console.log('Health check response:', healthData);
-                    
-                    if (healthData.status === 'ok') {
-                        // If server has no expenses but we have local data, sync it up
-                        if (healthData.total_expenses_in_system === 0 && localDataExists) {
-                            console.log("Server has no data but localStorage does, syncing up");
-                            await syncLocalDataToServer();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Health check failed:', error);
-                    if (localDataExists) {
-                        showNotification('Could not connect to server, using local data only', 'info');
-                    }
-                }
-            } catch (error) {
-                console.error('Application initialization error:', error);
-                showNotification('Error connecting to server, using local data only', 'warning');
-            }
-        }
-
-        // Save transaction to localStorage as backup
-        function saveToLocalStorage(transaction) {
-            try {
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                let localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                
-                // If transaction already has ID and date_created, use those
-                // Otherwise add them
-                const newTransaction = {
-                    ...transaction,
-                    id: transaction.id || Date.now(),
-                    date_created: transaction.date_created || new Date().toISOString(),
-                    date: transaction.date || new Date().toISOString() // For consistency with server format
-                };
-                
-                // Add the new transaction
-                localTransactions.push(newTransaction);
-                
-                // Sort by date (newest first)
-                localTransactions.sort((a, b) => new Date(b.date_created) - new Date(a.date_created));
-                
-                // Store back in localStorage
-                localStorage.setItem(storageKey, JSON.stringify(localTransactions));
-                
-                console.log('Saved transaction to localStorage:', newTransaction);
-                return true;
-            } catch (error) {
-                console.error('Failed to save to localStorage:', error);
-                return false;
-            }
-        }
-
-        // Load data from localStorage
-        async function loadLocalData() {
-            try {
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                
-                if (localTransactions.length > 0) {
-                    displayLocalTransactions(localTransactions);
-                    calculateLocalSummary(localTransactions);
-                    console.log(`Loaded ${localTransactions.length} transactions from localStorage`);
-                    return true;
-                } else {
-                    // Show empty state
-                    document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
-                    return false;
-                }
-            } catch (error) {
-                console.error('Failed to load from localStorage:', error);
-                return false;
-            }
-        }
-
-        // Sync server data to localStorage
-        async function syncServerDataToLocalStorage() {
-            try {
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                
-                // Get transactions from server
-                const response = await fetch('/api/expenses/');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch server data');
-                }
-                
-                const transactions = await response.json();
-                
-                if (transactions.length > 0) {
-                    // Save server transactions to localStorage
-                    localStorage.setItem(storageKey, JSON.stringify(transactions));
-                    console.log(`Saved ${transactions.length} transactions from server to localStorage`);
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Failed to sync server data to localStorage:', error);
-                return false;
-            }
-        }
-
-        // Sync local data to server (used when logging in from a different device)
-        async function syncLocalDataToServer() {
-            try {
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                let localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                
-                // Also check for transactions saved under different usernames
-                // This helps with cross-device login issues on Vercel
-                const allStorageKeys = Object.keys(localStorage);
-                for (const key of allStorageKeys) {
-                    if (key.startsWith('budgetTracker_transactions_') && key !== storageKey) {
-                        const otherTransactions = JSON.parse(localStorage.getItem(key) || '[]');
-                        if (otherTransactions.length > 0) {
-                            console.log(`Found transactions under different key: ${key}`);
-                            localTransactions = [...localTransactions, ...otherTransactions];
-                            // Remove duplicates by ID
-                            localTransactions = localTransactions.filter((transaction, index, self) =>
-                                index === self.findIndex((t) => t.id === transaction.id)
-                            );
-                        }
-                    }
-                }
-                
-                if (localTransactions.length > 0) {
-                    console.log('Syncing local data to server...');
-                    
-                    // First check if server has data for this user
-                    const serverResponse = await fetch('/api/expenses/');
-                    const serverTransactions = await serverResponse.json();
-                    
-                    if (serverTransactions.length > 0) {
-                        console.log('Server already has data for this user, not syncing');
-                        return;
-                    }
-                    
-                    // Server has no data, sync local data
-                    let syncedCount = 0;
-                    
-                    for (const transaction of localTransactions) {
-                        // Skip transactions that already have an ID that's not a timestamp (likely server-generated)
-                        if (transaction.id && !isNaN(transaction.id) && transaction.id > 1000000000000) {
-                            console.log('Skipping transaction that appears to be local-only:', transaction.id);
-                            continue;
-                        }
-                        
-                        const { id, date_created, ...transactionData } = transaction;
-                        try {
-                            const response = await fetch('/api/expenses/', {
-                                method: 'POST',
-                                headers: { 
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': getCsrfToken()
-                                },
-                                body: JSON.stringify(transactionData)
-                            });
-                            
-                            if (response.ok) {
-                                syncedCount++;
-                            }
-                        } catch (error) {
-                            console.error('Failed to sync transaction:', error);
-                        }
-                    }
-                    
-                    // Reload from server
-                    if (syncedCount > 0) {
-                        await loadSummary();
-                        await loadTransactions();
-                        
-                        showNotification(`Synced ${syncedCount} transactions to server. Your data is now available on all devices.`, 'success');
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to sync local data to server:', error);
-                showNotification('Could not sync your data to the server', 'error');
-            }
-        }
-
-        // Restore local data to server
-        async function restoreLocalData() {
-            try {
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                
-                if (localTransactions.length > 0) {
-                    console.log('Restoring local data to server...');
-                    for (const transaction of localTransactions) {
-                        const { id, date_created, ...transactionData } = transaction;
-                        try {
-                            await fetch('/api/expenses/', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(transactionData)
-                            });
-                        } catch (error) {
-                            console.error('Failed to restore transaction:', error);
-                        }
-                    }
-                    
-                    // Reload from server
-                    await loadSummary();
-                    await loadTransactions();
-                    showNotification('Restored data from local storage', 'success');
-                }
-            } catch (error) {
-                console.error('Failed to restore local data:', error);
-            }
-        }
-
-        // Display transactions from localStorage
-        function displayLocalTransactions(transactions) {
-            const container = document.getElementById('transactions-list');
-            if (transactions.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found</p>';
-                return;
-            }
-
-            container.innerHTML = transactions.map(transaction => {
-                const isIncome = transaction.transaction_type === 'income';
-                const categories = {
-                    income: [
-                        { value: 'salary', label: 'Salary', icon: 'fas fa-briefcase' },
-                        { value: 'freelance', label: 'Freelance', icon: 'fas fa-laptop-code' },
-                        { value: 'investment', label: 'Investment', icon: 'fas fa-chart-line' },
-                        { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
-                    ],
-                    expense: [
-                        { value: 'food', label: 'Food & Dining', icon: 'fas fa-utensils' },
-                        { value: 'transport', label: 'Transportation', icon: 'fas fa-car' },
-                        { value: 'shopping', label: 'Shopping', icon: 'fas fa-shopping-bag' },
-                        { value: 'entertainment', label: 'Entertainment', icon: 'fas fa-film' },
-                        { value: 'bills', label: 'Bills & Utilities', icon: 'fas fa-receipt' },
-                        { value: 'healthcare', label: 'Healthcare', icon: 'fas fa-heartbeat' },
-                        { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
-                    ]
-                };
-                
-                const category = categories[transaction.transaction_type].find(cat => cat.value === transaction.category);
-                const categoryIcon = category ? category.icon : 'fas fa-circle';
-                const categoryLabel = category ? category.label : transaction.category;
-                
-                return `
-                    <div class="transaction-item bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 animate-fade-in">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center space-x-3">
-                                <div class="icon-container ${isIncome ? 'bg-green-500/20' : 'bg-red-500/20'} p-2 rounded-lg">
-                                    <i class="${categoryIcon} ${isIncome ? 'text-green-400' : 'text-red-400'}"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-medium text-white">${transaction.description}</h4>
-                                    <p class="text-sm text-gray-400">${categoryLabel}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-semibold ${isIncome ? 'text-green-400' : 'text-red-400'}">
-                                    ${isIncome ? '+' : '-'}₱${parseFloat(transaction.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}
-                                </p>
-                                <p class="text-xs text-gray-500">${new Date(transaction.date_created).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Calculate summary from local transactions
-        function calculateLocalSummary(transactions) {
-            const income = transactions.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + parseFloat(t.amount), 0);
-            const expenses = transactions.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount), 0);
-            const balance = income - expenses;
-
-            document.getElementById('total-income').textContent = `₱${income.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('total-expenses').textContent = `₱${expenses.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('balance').textContent = `₱${balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-
-            updateProgressBars({ income_total: income, expense_total: expenses, balance });
-        }
-
-        // Reset all data function
-        async function resetAllData() {
-            if (!confirm('Are you sure you want to reset all data? This will delete all transactions and cannot be undone.')) {
-                return;
-            }
-
-            try {
-                // Clear server data
-                const response = await fetch('/api/reset/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCsrfToken()
-                    }
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.status === 'success') {
-                    // Clear localStorage with user-specific key
-                    const username = '{{ user.username }}';
-                    const storageKey = `budgetTracker_transactions_${username}`;
-                    localStorage.removeItem(storageKey);
-                    
-                    // Also try clearing with the username from the server response
-                    // This helps with Vercel deployments where session username might be different
-                    if (result.username) {
-                        const serverStorageKey = `budgetTracker_transactions_${result.username}`;
-                        localStorage.removeItem(serverStorageKey);
-                    }
-                    
-                    // Reset UI to zero state
-                    resetUIToZero();
-                    
-                    // Ensure all UI elements are refreshed and synchronized
-                    updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
-                    
-                    // Clear transactions list 
-                    document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
-                    
-                    showNotification('All data reset successfully! Starting fresh.', 'success');
-                } else {
-                    showNotification('Failed to reset data: ' + (result.message || 'Unknown error'), 'error');
-                }
-            } catch (error) {
-                console.error('Reset error:', error);
-                
-                // If server fails, at least clear localStorage
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                localStorage.removeItem(storageKey);
-                
-                // Reset UI to zero state
-                resetUIToZero();
-                
-                // Ensure all UI elements are refreshed and synchronized
-                updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
-                
-                showNotification('Data reset locally (server may be unavailable)', 'info');
-            }
-        }
-
-        // Reset UI to zero state
-        function resetUIToZero() {
-            // Reset summary
-            document.getElementById('total-income').textContent = '₱0.00';
-            document.getElementById('total-expenses').textContent = '₱0.00';
-            document.getElementById('balance').textContent = '₱0.00';
-            
-            // Reset progress bars
-            updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
-            
-            // Clear transactions list with a clean empty state message
-            document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
-            
-            // Reset any other UI elements that might show financial data
-            document.getElementById('spending-percentage').textContent = '0%';
-            document.getElementById('savings-percentage').textContent = '0%';
-            document.getElementById('spending-progress').style.setProperty('--progress-width', '0%');
-            document.getElementById('savings-progress').style.setProperty('--progress-width', '0%');
-        }
 
         function updateCurrentDate() {
             const now = new Date();
@@ -980,13 +526,11 @@
             }
             
             // Populate categories
-            categorySelect.innerHTML = '<option value="" style="background-color: rgb(31 41 55); color: white;">Select Category</option>';
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
             categories[type].forEach(cat => {
                 const option = document.createElement('option');
                 option.value = cat.value;
                 option.textContent = cat.label;
-                option.style.backgroundColor = 'rgb(31 41 55)';
-                option.style.color = 'white';
                 categorySelect.appendChild(option);
             });
             
@@ -1016,80 +560,32 @@
                 transaction_type: currentTransactionType
             };
             
-            console.log('Submitting transaction data:', data);
-            
-            // Validate required fields
-            if (!data.description || !data.amount || !data.category || !data.transaction_type) {
-                console.error('Missing required fields:', data);
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-            
-            if (isNaN(data.amount) || data.amount <= 0) {
-                console.error('Invalid amount:', data.amount);
-                showNotification('Please enter a valid amount', 'error');
-                return;
-            }
-            
-            // Always save to localStorage first for immediate feedback
-            const localTransaction = {
-                ...data,
-                id: Date.now(), // Use timestamp as temporary ID
-                date_created: new Date().toISOString(),
-                date: new Date().toISOString() // Add date field to match server format
-            };
-            saveToLocalStorage(localTransaction);
-            
-            // Hide form and update UI immediately from localStorage
-            hideAddForm();
-            await loadLocalData();
-            
-            // Now try to save to server
             try {
                 const response = await fetch('/api/expenses/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': getCsrfToken()
                     },
                     body: JSON.stringify(data)
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
                 if (response.ok) {
-                    const responseData = await response.json();
-                    console.log('Success response:', responseData);
-                    
-                    // Sync with server data
-                    await syncServerDataToLocalStorage();
-                    
-                    // Reload data from server to ensure consistent data across devices
-                    const summarySuccess = await loadSummary();
-                    const transactionsSuccess = await loadTransactions();
-                    
-                    if (summarySuccess && transactionsSuccess) {
-                        showNotification('Transaction added successfully! Your data is synced across devices.', 'success');
-                    } else {
-                        showNotification('Transaction saved. Server sync may be incomplete.', 'info');
-                    }
+                    hideAddForm();
+                    loadSummary();
+                    loadTransactions();
+                    showNotification('Transaction added successfully!', 'success');
                 } else {
-                    showNotification('Transaction saved locally (server error)', 'info');
+                    showNotification('Error adding transaction', 'error');
                 }
             } catch (error) {
-                console.error('Network/parsing error:', error);
-                showNotification('Transaction saved locally (network error)', 'info');
+                console.error('Error:', error);
+                showNotification('Error adding transaction', 'error');
             }
         });
 
         async function loadSummary() {
             try {
                 const response = await fetch('/api/summary/');
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-                
                 const data = await response.json();
                 
                 // Update summary cards with animation
@@ -1100,11 +596,8 @@
                 // Update progress bars
                 updateProgressBars(data);
                 
-                console.log("Summary loaded successfully from server");
-                return true;
             } catch (error) {
                 console.error('Error loading summary:', error);
-                return false;
             }
         }
 
@@ -1132,10 +625,6 @@
         async function loadTransactions() {
             try {
                 const response = await fetch('/api/expenses/');
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-                
                 const transactions = await response.json();
                 
                 const transactionsList = document.getElementById('transactions-list');
@@ -1150,7 +639,7 @@
                             <p class="text-sm">Start by adding your first income or expense</p>
                         </div>
                     `;
-                    return true;
+                    return;
                 }
                 
                 transactionsList.innerHTML = transactions.map((transaction, index) => {
@@ -1192,11 +681,8 @@
                     `;
                 }).join('');
                 
-                console.log("Transactions loaded successfully from server");
-                return true;
             } catch (error) {
                 console.error('Error loading transactions:', error);
-                return false;
             }
         }
 
@@ -1215,9 +701,7 @@
                     loadTransactions();
                     showNotification('Transaction deleted successfully!', 'success');
                 } else {
-                    const errorData = await response.text();
-                    console.error('Delete error:', errorData);
-                    showNotification(`Error deleting transaction: ${response.status}`, 'error');
+                    showNotification('Error deleting transaction', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -1226,25 +710,9 @@
         }
 
         function refreshTransactions() {
-            // First try to load from server
-            loadSummary().then(summarySuccess => {
-                loadTransactions().then(transactionsSuccess => {
-                    if (summarySuccess && transactionsSuccess) {
-                        // If server data loaded successfully, save it to localStorage
-                        syncServerDataToLocalStorage();
-                        showNotification('Data refreshed from server!', 'success');
-                    } else {
-                        // If server data loading fails, fall back to localStorage
-                        loadLocalData();
-                        showNotification('Using locally stored data (server unavailable)', 'info');
-                    }
-                });
-            }).catch(error => {
-                console.error('Error refreshing data:', error);
-                // Fall back to localStorage
-                loadLocalData();
-                showNotification('Using locally stored data (server error)', 'info');
-            });
+            loadSummary();
+            loadTransactions();
+            showNotification('Data refreshed!', 'info');
         }
 
         function showNotification(message, type = 'info') {
@@ -1273,11 +741,6 @@
             }, 3000);
         }
 
-        // Get CSRF Token from meta tag
-        function getCsrfToken() {
-            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        }
-        
         // Close modal when clicking outside
         document.getElementById('transaction-modal').addEventListener('click', function(e) {
             if (e.target === this) {
@@ -1298,33 +761,6 @@
                 e.preventDefault();
                 showAddForm('expense');
             }
-        });
-        
-        // Function to check if this is the first login on this device
-        function checkFirstLogin() {
-            const username = '{{ user.username }}';
-            const loginKey = `budgetTracker_deviceLogin_${username}`;
-            
-            if (!localStorage.getItem(loginKey)) {
-                // This is the first login on this device
-                console.log('First login on this device detected');
-                localStorage.setItem(loginKey, new Date().toISOString());
-                
-                // Show a welcome message
-                showNotification('Welcome back! Syncing your data across devices...', 'info');
-                
-                // Attempt to sync data from server
-                setTimeout(() => {
-                    syncLocalDataToServer();
-                }, 2000);
-            }
-        }
-        
-        // Call checkFirstLogin when the app initializes
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCurrentDate();
-            initializeApp();
-            checkFirstLogin();
         });
     </script>
 </body>

@@ -74,8 +74,14 @@ def login_view(request):
                 login(request, user)
                 messages.success(request, f'Welcome back, {user.username}!')
                 
-                # Set a session cookie to remember the login
+                # Set a session cookie to remember the login - 14 days
                 request.session.set_expiry(60 * 60 * 24 * 14)  # 14 days
+                
+                # Set additional session flags for better persistence
+                request.session['user_id'] = user.id
+                request.session['username'] = user.username
+                request.session['is_authenticated'] = True
+                request.session.modified = True
                 
                 return redirect('expenses:dashboard')
         else:
@@ -108,12 +114,17 @@ def logout_view(request):
     
     # Clear all session data
     request.session.flush()
+    request.session.clear_expired()  # Clear expired sessions
     
     # Django's logout function
     logout(request)
     
+    # Set cookie expiry to force browser to remove it
+    response = redirect('authentication:login')
+    response.delete_cookie('sessionid')
+    
     messages.success(request, f'Goodbye, {username}! You have been logged out successfully.')
-    return redirect('authentication:login')
+    return response
 
 @method_decorator(csrf_protect, name='dispatch')
 class RegisterView(CreateView):

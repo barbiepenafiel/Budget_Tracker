@@ -51,6 +51,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'authentication.middleware.VercelSessionPersistenceMiddleware',  # Custom middleware for Vercel
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -65,9 +66,13 @@ if os.environ.get('VERCEL'):
     CSRF_TRUSTED_ORIGINS = [
         'https://*.vercel.app',
         'https://budget-tracker-*.vercel.app',
+        'https://*.vercel.app',
+        '*',  # More permissive for troubleshooting
     ]
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
+    CSRF_USE_SESSIONS = True  # Store CSRF token in the session
+    CSRF_COOKIE_SAMESITE = 'Lax'
 else:
     CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
 
@@ -102,7 +107,7 @@ if os.environ.get('VERCEL'):
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': '/tmp/db.sqlite3',  # Use /tmp for Vercel persistence
             'OPTIONS': {
-                'timeout': 20,
+                'timeout': 30,  # Increased timeout for better reliability
             }
         }
     }
@@ -145,9 +150,18 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/auth/login/'
 
 # Session settings
-SESSION_COOKIE_AGE = 1800  # 30 minutes
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 1209600  # 14 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
+
+# Special settings for Vercel
+if os.environ.get('VERCEL'):
+    # Additional Vercel-specific settings
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Account lockout settings  
 ACCOUNT_LOCKOUT_ATTEMPTS = 3
