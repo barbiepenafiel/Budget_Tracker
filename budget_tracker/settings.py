@@ -94,12 +94,12 @@ WSGI_APPLICATION = 'budget_tracker.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Use in-memory database on Vercel (demo purposes), SQLite locally
+# Use file-based SQLite on Vercel for persistence within session, SQLite locally
 if os.environ.get('VERCEL'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
+            'NAME': '/tmp/db.sqlite3',  # Use /tmp for Vercel persistence
             'OPTIONS': {
                 'timeout': 20,
             }

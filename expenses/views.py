@@ -18,47 +18,18 @@ logger = logging.getLogger(__name__)
 def health_check(request):
     """Simple health check endpoint"""
     try:
-        # On Vercel, ensure database is initialized
-        if os.environ.get('VERCEL'):
-            from django.db import connection
-            from django.core.management import call_command
-            
-            # Ensure database connection
-            connection.ensure_connection()
-            
-            # Run migrations
-            call_command('migrate', '--noinput', verbosity=0)
-            
-            # Create sample data if needed
-            if not Expense.objects.exists():
-                from decimal import Decimal
-                sample_data = [
-                    {
-                        'description': 'Demo Income',
-                        'amount': Decimal('25000.00'),
-                        'category': 'salary',
-                        'transaction_type': 'income'
-                    },
-                    {
-                        'description': 'Demo Expense',
-                        'amount': Decimal('1500.00'),
-                        'category': 'food',
-                        'transaction_type': 'expense'
-                    }
-                ]
-                
-                for data in sample_data:
-                    Expense.objects.create(**data)
-        
+        # Test database connection
+        expense_count = Expense.objects.count()
         return JsonResponse({
             'status': 'ok', 
             'message': 'Budget Tracker API is running!',
-            'database_ready': True
+            'database_ready': True,
+            'expense_count': expense_count
         })
     except Exception as e:
         return JsonResponse({
             'status': 'error',
-            'message': f'Database initialization failed: {str(e)}',
+            'message': f'Database error: {str(e)}',
             'database_ready': False
         }, status=500)
 
@@ -71,21 +42,6 @@ class ExpenseListCreateAPIView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         try:
             logger.info(f"Received POST data: {request.data}")
-            
-            # Ensure database is ready
-            from django.db import connection
-            from django.core.management import call_command
-            
-            # On Vercel, ensure migrations are run
-            if os.environ.get('VERCEL'):
-                try:
-                    # Test database connection
-                    connection.ensure_connection()
-                    # Run migrations if needed
-                    call_command('migrate', '--noinput', verbosity=0)
-                except Exception as db_error:
-                    logger.error(f"Database initialization error: {str(db_error)}")
-            
             return super().post(request, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error creating expense: {str(e)}")

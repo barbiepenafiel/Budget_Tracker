@@ -494,20 +494,165 @@
                 const healthResponse = await fetch('/health/');
                 const healthData = await healthResponse.json();
                 
+                console.log('Health check response:', healthData);
+                
                 if (healthData.status === 'ok') {
                     console.log('Database initialized successfully');
-                    loadSummary();
-                    loadTransactions();
+                    // Load data from server first
+                    await loadSummary();
+                    await loadTransactions();
+                    
+                    // If no data on server but we have local data, restore it
+                    if (healthData.expense_count === 0) {
+                        await restoreLocalData();
+                    }
                 } else {
                     console.error('Database initialization failed:', healthData.message);
-                    showNotification('Database initialization failed', 'error');
+                    showNotification('Database initialization failed, using local storage', 'error');
+                    await loadLocalData();
                 }
             } catch (error) {
                 console.error('Health check failed:', error);
                 // Fallback: try to load data anyway
-                loadSummary();
-                loadTransactions();
+                try {
+                    await loadSummary();
+                    await loadTransactions();
+                } catch {
+                    await loadLocalData();
+                }
             }
+        }
+
+        // Save transaction to localStorage as backup
+        function saveToLocalStorage(transaction) {
+            try {
+                const localTransactions = JSON.parse(localStorage.getItem('budgetTracker_transactions') || '[]');
+                localTransactions.push({
+                    ...transaction,
+                    id: Date.now(),
+                    date_created: new Date().toISOString()
+                });
+                localStorage.setItem('budgetTracker_transactions', JSON.stringify(localTransactions));
+            } catch (error) {
+                console.error('Failed to save to localStorage:', error);
+            }
+        }
+
+        // Load data from localStorage
+        async function loadLocalData() {
+            try {
+                const localTransactions = JSON.parse(localStorage.getItem('budgetTracker_transactions') || '[]');
+                
+                if (localTransactions.length > 0) {
+                    displayLocalTransactions(localTransactions);
+                    calculateLocalSummary(localTransactions);
+                    showNotification('Loaded data from local storage', 'info');
+                } else {
+                    // Show empty state
+                    document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load from localStorage:', error);
+            }
+        }
+
+        // Restore local data to server
+        async function restoreLocalData() {
+            try {
+                const localTransactions = JSON.parse(localStorage.getItem('budgetTracker_transactions') || '[]');
+                
+                if (localTransactions.length > 0) {
+                    console.log('Restoring local data to server...');
+                    for (const transaction of localTransactions) {
+                        const { id, date_created, ...transactionData } = transaction;
+                        try {
+                            await fetch('/api/expenses/', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(transactionData)
+                            });
+                        } catch (error) {
+                            console.error('Failed to restore transaction:', error);
+                        }
+                    }
+                    
+                    // Reload from server
+                    await loadSummary();
+                    await loadTransactions();
+                    showNotification('Restored data from local storage', 'success');
+                }
+            } catch (error) {
+                console.error('Failed to restore local data:', error);
+            }
+        }
+
+        // Display transactions from localStorage
+        function displayLocalTransactions(transactions) {
+            const container = document.getElementById('transactions-list');
+            if (transactions.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found</p>';
+                return;
+            }
+
+            container.innerHTML = transactions.map(transaction => {
+                const isIncome = transaction.transaction_type === 'income';
+                const categories = {
+                    income: [
+                        { value: 'salary', label: 'Salary', icon: 'fas fa-briefcase' },
+                        { value: 'freelance', label: 'Freelance', icon: 'fas fa-laptop-code' },
+                        { value: 'investment', label: 'Investment', icon: 'fas fa-chart-line' },
+                        { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
+                    ],
+                    expense: [
+                        { value: 'food', label: 'Food & Dining', icon: 'fas fa-utensils' },
+                        { value: 'transport', label: 'Transportation', icon: 'fas fa-car' },
+                        { value: 'shopping', label: 'Shopping', icon: 'fas fa-shopping-bag' },
+                        { value: 'entertainment', label: 'Entertainment', icon: 'fas fa-film' },
+                        { value: 'bills', label: 'Bills & Utilities', icon: 'fas fa-receipt' },
+                        { value: 'healthcare', label: 'Healthcare', icon: 'fas fa-heartbeat' },
+                        { value: 'other', label: 'Other', icon: 'fas fa-ellipsis-h' }
+                    ]
+                };
+                
+                const category = categories[transaction.transaction_type].find(cat => cat.value === transaction.category);
+                const categoryIcon = category ? category.icon : 'fas fa-circle';
+                const categoryLabel = category ? category.label : transaction.category;
+                
+                return `
+                    <div class="transaction-item bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 animate-fade-in">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-3">
+                                <div class="icon-container ${isIncome ? 'bg-green-500/20' : 'bg-red-500/20'} p-2 rounded-lg">
+                                    <i class="${categoryIcon} ${isIncome ? 'text-green-400' : 'text-red-400'}"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-white">${transaction.description}</h4>
+                                    <p class="text-sm text-gray-400">${categoryLabel}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold ${isIncome ? 'text-green-400' : 'text-red-400'}">
+                                    ${isIncome ? '+' : '-'}₱${parseFloat(transaction.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                </p>
+                                <p class="text-xs text-gray-500">${new Date(transaction.date_created).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Calculate summary from local transactions
+        function calculateLocalSummary(transactions) {
+            const income = transactions.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            const expenses = transactions.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            const balance = income - expenses;
+
+            document.getElementById('total-income').textContent = `₱${income.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('total-expenses').textContent = `₱${expenses.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('balance').textContent = `₱${balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            updateProgressBars({ income_total: income, expense_total: expenses, balance });
         }
 
         function updateCurrentDate() {
@@ -610,19 +755,29 @@
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log('Success response:', responseData);
+                    
+                    // Save to localStorage as backup
+                    saveToLocalStorage(data);
+                    
                     hideAddForm();
                     loadSummary();
                     loadTransactions();
                     showNotification('Transaction added successfully!', 'success');
                 } else {
-                    const errorData = await response.text();
-                    console.error('Server error:', errorData);
-                    console.error('Response headers:', [...response.headers.entries()]);
-                    showNotification(`Error adding transaction: ${response.status}`, 'error');
+                    // If server fails, save to localStorage only
+                    console.error('Server failed, saving to localStorage only');
+                    saveToLocalStorage(data);
+                    hideAddForm();
+                    await loadLocalData();
+                    showNotification('Transaction saved locally (server unavailable)', 'info');
                 }
             } catch (error) {
                 console.error('Network/parsing error:', error);
-                showNotification('Network error adding transaction', 'error');
+                // Save to localStorage as fallback
+                saveToLocalStorage(data);
+                hideAddForm();
+                await loadLocalData();
+                showNotification('Transaction saved locally (network error)', 'info');
             }
         });
 
