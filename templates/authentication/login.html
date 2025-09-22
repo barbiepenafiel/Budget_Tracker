@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Budget Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-border {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4);
+            border-radius: 12px;
+            padding: 2px;
+        }
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            transition: all 0.3s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <!-- Background Animation -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute top-40 left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse" style="animation-delay: 4s;"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="relative z-10 w-full max-w-md">
+        <!-- Logo/Header -->
+        <div class="text-center mb-8">
+            <div class="gradient-border inline-block mb-4">
+                <div class="bg-slate-900 rounded-lg p-4">
+                    <i class="fas fa-wallet text-4xl text-blue-400"></i>
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">Budget Tracker</h1>
+            <p class="text-gray-400">Sign in to manage your finances</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="glass-card rounded-lg p-8 shadow-2xl">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/30 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/30 text-green-400{% else %}bg-blue-500/20 border border-blue-500/30 text-blue-400{% endif %}">
+                        <i class="fas {% if message.tags == 'error' %}fa-exclamation-triangle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Username Field -->
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-user mr-2"></i>Username
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="mt-2 text-red-400 text-sm">
+                            {% for error in form.username.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <div class="mt-2 text-red-400 text-sm">
+                            {% for error in form.password.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Non-field errors -->
+                {% if form.non_field_errors %}
+                    <div class="text-red-400 text-sm">
+                        {% for error in form.non_field_errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Login Button -->
+                <button type="submit" class="w-full btn-login text-white font-semibold py-3 px-6 rounded-lg hover:shadow-lg transform transition-all duration-300">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                </button>
+            </form>
+
+            <!-- Register Link -->
+            <div class="mt-6 text-center">
+                <p class="text-gray-400">
+                    Don't have an account? 
+                    <a href="{% url 'authentication:register' %}" class="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-300">
+                        <i class="fas fa-user-plus mr-1"></i>Sign up here
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="mt-6 text-center text-xs text-gray-500">
+            <i class="fas fa-shield-alt mr-1"></i>
+            Your account will be locked for 5 minutes after 3 failed login attempts
+        </div>
+    </div>
+</body>
+</html>

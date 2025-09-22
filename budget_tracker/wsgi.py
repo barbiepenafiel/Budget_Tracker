@@ -61,34 +61,20 @@ if os.environ.get('VERCEL'):
                     # Run migrations
                     call_command('migrate', '--noinput', verbosity=0)
                     
-                    # Create sample data for demo
-                    from expenses.models import Expense
-                    from decimal import Decimal
+                    # Create a superuser for admin access (only if none exists)
+                    from django.contrib.auth.models import User
+                    if not User.objects.filter(is_superuser=True).exists():
+                        try:
+                            User.objects.create_superuser(
+                                username='admin',
+                                email='admin@example.com',
+                                password='admin123!@#'
+                            )
+                            print("Superuser 'admin' created for testing")
+                        except Exception as e:
+                            print(f"Could not create superuser: {e}")
                     
-                    if not Expense.objects.exists():
-                        sample_data = [
-                            {
-                                'description': 'Monthly Salary',
-                                'amount': Decimal('50000.00'),
-                                'category': 'salary',
-                                'transaction_type': 'income'
-                            },
-                            {
-                                'description': 'Grocery Shopping',
-                                'amount': Decimal('2500.00'),
-                                'category': 'food',
-                                'transaction_type': 'expense'
-                            },
-                            {
-                                'description': 'Transportation',
-                                'amount': Decimal('1200.00'),
-                                'category': 'transport',
-                                'transaction_type': 'expense'
-                            }
-                        ]
-                        
-                        for data in sample_data:
-                            Expense.objects.create(**data)
+                    print("Database initialized with clean state and authentication")
                 
                 _initialized = True
                 

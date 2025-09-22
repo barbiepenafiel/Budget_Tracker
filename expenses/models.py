@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 class Expense(models.Model):
     INCOME = 'income'
@@ -22,6 +23,7 @@ class Expense(models.Model):
         ('other', 'Other'),
     ]
     
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='expenses', null=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.CharField(max_length=255)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='other')
@@ -32,4 +34,4 @@ class Expense(models.Model):
         ordering = ['-date_created']
     
     def __str__(self):
-        return f"{self.transaction_type.title()}: {self.description} - ₱{self.amount}"
+        return f"{self.user.username} - {self.transaction_type.title()}: {self.description} - ₱{self.amount}"

@@ -110,6 +110,26 @@
             transition: left 0.5s;
         }
         
+        /* Custom select dropdown styling */
+        select {
+            background-color: rgb(31, 41, 55) !important;
+            color: white !important;
+        }
+        
+        select option {
+            background-color: rgb(31, 41, 55) !important;
+            color: white !important;
+            padding: 8px 12px;
+        }
+        
+        select option:hover {
+            background-color: rgb(55, 65, 81) !important;
+        }
+        
+        select option:checked {
+            background-color: rgb(59, 130, 246) !important;
+        }
+        
         .button-modern:hover:before {
             left: 100%;
         }
@@ -222,16 +242,41 @@
                     </div>
                     <div>
                         <h1 class="text-3xl font-bold gradient-text">Budget Tracker</h1>
-                        <p class="text-gray-300 text-sm">Modern Financial Management</p>
+                        <p class="text-gray-300 text-sm">Welcome back, {{ user.username }}!</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-6">
                     <div class="text-right">
                         <p class="text-sm text-gray-400">Today</p>
                         <p class="text-lg font-semibold" id="current-date"></p>
                     </div>
-                    <div class="floating-icon">
-                        <i class="fas fa-chart-line text-2xl text-white/70"></i>
+                    
+                    <!-- User Menu -->
+                    <div class="relative group">
+                        <button class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all duration-300">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-white text-sm"></i>
+                            </div>
+                            <span class="text-white font-medium">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="absolute right-0 top-full mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                            <div class="p-2">
+                                <div class="px-3 py-2 border-b border-gray-700/50 mb-2">
+                                    <p class="text-sm text-gray-400">Signed in as</p>
+                                    <p class="text-white font-medium">{{ user.username }}</p>
+                                    {% if user.email %}
+                                        <p class="text-xs text-gray-400">{{ user.email }}</p>
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'authentication:logout' %}" class="flex items-center space-x-2 px-3 py-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors duration-200">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Sign Out</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -347,7 +392,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <button onclick="showAddForm('income')" 
                     class="button-modern glass-morphism rounded-2xl p-6 text-left hover-lift">
                 <div class="flex items-center justify-between">
@@ -373,6 +418,22 @@
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Add Expense</h3>
                         <p class="text-gray-400">Track your spending and purchases</p>
+                    </div>
+                    <div class="floating-icon">
+                        <i class="fas fa-arrow-right text-gray-400"></i>
+                    </div>
+                </div>
+            </button>
+
+            <button onclick="resetAllData()" 
+                    class="button-modern glass-morphism rounded-2xl p-6 text-left hover-lift">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="icon-container bg-orange-500/20 p-3 rounded-xl mb-3 inline-block">
+                            <i class="fas fa-refresh text-2xl text-orange-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Reset Data</h3>
+                        <p class="text-gray-400">Start fresh with clean budget</p>
                     </div>
                     <div class="floating-icon">
                         <i class="fas fa-arrow-right text-gray-400"></i>
@@ -424,7 +485,7 @@
                         <i class="fas fa-tag mr-2"></i>Description
                     </label>
                     <input type="text" id="description" name="description" required
-                           class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                           class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 </div>
                 
                 <div>
@@ -432,7 +493,7 @@
                         <i class="fas fa-peso-sign mr-2"></i>Amount
                     </label>
                     <input type="number" id="amount" name="amount" step="0.01" required
-                           class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                           class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 </div>
                 
                 <div>
@@ -440,8 +501,9 @@
                         <i class="fas fa-folder mr-2"></i>Category
                     </label>
                     <select id="category" name="category" required
-                            class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        <option value="">Select Category</option>
+                            class="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            style="color: white; background-color: rgb(31 41 55);">
+                        <option value="" style="background-color: rgb(31 41 55); color: white;">Select Category</option>
                     </select>
                 </div>
                 
@@ -655,6 +717,59 @@
             updateProgressBars({ income_total: income, expense_total: expenses, balance });
         }
 
+        // Reset all data function
+        async function resetAllData() {
+            if (!confirm('Are you sure you want to reset all data? This will delete all transactions and cannot be undone.')) {
+                return;
+            }
+
+            try {
+                // Clear server data
+                const response = await fetch('/api/reset/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    // Clear localStorage
+                    localStorage.removeItem('budgetTracker_transactions');
+                    
+                    // Reset UI to zero state
+                    resetUIToZero();
+                    
+                    showNotification('All data reset successfully! Starting fresh.', 'success');
+                } else {
+                    throw new Error(result.message || 'Failed to reset data');
+                }
+            } catch (error) {
+                console.error('Reset error:', error);
+                
+                // If server fails, at least clear localStorage
+                localStorage.removeItem('budgetTracker_transactions');
+                resetUIToZero();
+                
+                showNotification('Data reset locally (server may be unavailable)', 'info');
+            }
+        }
+
+        // Reset UI to zero state
+        function resetUIToZero() {
+            // Reset summary
+            document.getElementById('total-income').textContent = '₱0.00';
+            document.getElementById('total-expenses').textContent = '₱0.00';
+            document.getElementById('balance').textContent = '₱0.00';
+            
+            // Reset progress bars
+            updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
+            
+            // Clear transactions list
+            document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
+        }
+
         function updateCurrentDate() {
             const now = new Date();
             const options = { 
@@ -691,11 +806,13 @@
             }
             
             // Populate categories
-            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            categorySelect.innerHTML = '<option value="" style="background-color: rgb(31 41 55); color: white;">Select Category</option>';
             categories[type].forEach(cat => {
                 const option = document.createElement('option');
                 option.value = cat.value;
                 option.textContent = cat.label;
+                option.style.backgroundColor = 'rgb(31 41 55)';
+                option.style.color = 'white';
                 categorySelect.appendChild(option);
             });
             
