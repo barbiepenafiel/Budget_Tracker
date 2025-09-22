@@ -543,11 +543,12 @@
             ]
         };
 
-        // Initialize the application
+        // Call checkFirstLogin when the app initializes
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
             initializeUserDropdown();
             initializeApp();
+            checkFirstLogin();
         });
         
         // Initialize user dropdown menu with click event
@@ -596,33 +597,37 @@
         // Initialize app with database check for Vercel
         async function initializeApp() {
             try {
-                // Always load from localStorage first to ensure data is visible immediately
-                await loadLocalData();
+                // First try to load from server (this ensures data syncs across devices)
+                console.log("Attempting to load data from server...");
+                const summarySuccess = await loadSummary();
+                const transactionsSuccess = await loadTransactions();
                 
-                // Then try to fetch from server
-                const healthResponse = await fetch('/health/');
-                const healthData = await healthResponse.json();
+                if (!summarySuccess || !transactionsSuccess) {
+                    // If server data loading fails, fall back to localStorage
+                    console.log("Server data loading failed, falling back to localStorage");
+                    await loadLocalData();
+                }
                 
-                console.log('Health check response:', healthData);
-                
-                if (healthData.status === 'ok') {
-                    console.log('Database initialized successfully');
-                    // Load data from server
-                    await loadSummary();
-                    await loadTransactions();
+                // Run health check to see if we should sync localStorage to server
+                try {
+                    const healthResponse = await fetch('/health/');
+                    const healthData = await healthResponse.json();
                     
-                    // If no data on server but we have local data, restore it
-                    if (healthData.expense_count === 0) {
-                        await restoreLocalData();
+                    console.log('Health check response:', healthData);
+                    
+                    if (healthData.status === 'ok' && healthData.expense_count === 0) {
+                        // If server has no data but we have local data, sync it up
+                        await syncLocalDataToServer();
                     }
-                } else {
-                    console.error('Database initialization failed:', healthData.message);
-                    showNotification('Database initialization failed, using local storage', 'error');
+                } catch (error) {
+                    console.error('Health check failed:', error);
+                    showNotification('Could not connect to server, using local data only', 'info');
                 }
             } catch (error) {
-                console.error('Health check failed:', error);
-                // We already loaded from localStorage, so just show a notification
-                showNotification('Could not connect to server, using local data', 'info');
+                console.error('Application initialization error:', error);
+                // Final fallback - try to load from localStorage
+                await loadLocalData();
+                showNotification('Error connecting to server, using local data only', 'warning');
             }
         }
 
@@ -660,6 +665,59 @@
                 }
             } catch (error) {
                 console.error('Failed to load from localStorage:', error);
+            }
+        }
+
+        // Sync local data to server (used when logging in from a different device)
+        async function syncLocalDataToServer() {
+            try {
+                const username = '{{ user.username }}';
+                const storageKey = `budgetTracker_transactions_${username}`;
+                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                
+                if (localTransactions.length > 0) {
+                    console.log('Syncing local data to server...');
+                    
+                    // First check if server has data for this user
+                    const serverResponse = await fetch('/api/expenses/');
+                    const serverTransactions = await serverResponse.json();
+                    
+                    if (serverTransactions.length > 0) {
+                        console.log('Server already has data for this user, not syncing');
+                        return;
+                    }
+                    
+                    // Server has no data, sync local data
+                    let syncedCount = 0;
+                    
+                    for (const transaction of localTransactions) {
+                        const { id, date_created, ...transactionData } = transaction;
+                        try {
+                            const response = await fetch('/api/expenses/', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(transactionData)
+                            });
+                            
+                            if (response.ok) {
+                                syncedCount++;
+                            }
+                        } catch (error) {
+                            console.error('Failed to sync transaction:', error);
+                        }
+                    }
+                    
+                    // Reload from server
+                    await loadSummary();
+                    await loadTransactions();
+                    
+                    if (syncedCount > 0) {
+                        showNotification(`Synced ${syncedCount} transactions to server. Your data is now available on all devices.`, 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync local data to server:', error);
+                showNotification('Could not sync your data to the server', 'error');
             }
         }
 
@@ -928,9 +986,17 @@
                     saveToLocalStorage(data);
                     
                     hideAddForm();
-                    loadSummary();
-                    loadTransactions();
-                    showNotification('Transaction added successfully!', 'success');
+                    
+                    // Always reload from server to ensure consistent data across devices
+                    const summarySuccess = await loadSummary();
+                    const transactionsSuccess = await loadTransactions();
+                    
+                    if (!summarySuccess || !transactionsSuccess) {
+                        // If server data loading fails, fall back to localStorage
+                        await loadLocalData();
+                    }
+                    
+                    showNotification('Transaction added successfully! Your data is synced across devices.', 'success');
                 } else {
                     // If server fails, save to localStorage only
                     console.error('Server failed, saving to localStorage only');
@@ -952,6 +1018,10 @@
         async function loadSummary() {
             try {
                 const response = await fetch('/api/summary/');
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
                 // Update summary cards with animation
@@ -962,8 +1032,11 @@
                 // Update progress bars
                 updateProgressBars(data);
                 
+                console.log("Summary loaded successfully from server");
+                return true;
             } catch (error) {
                 console.error('Error loading summary:', error);
+                return false;
             }
         }
 
@@ -991,6 +1064,10 @@
         async function loadTransactions() {
             try {
                 const response = await fetch('/api/expenses/');
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
                 const transactions = await response.json();
                 
                 const transactionsList = document.getElementById('transactions-list');
@@ -1005,7 +1082,7 @@
                             <p class="text-sm">Start by adding your first income or expense</p>
                         </div>
                     `;
-                    return;
+                    return true;
                 }
                 
                 transactionsList.innerHTML = transactions.map((transaction, index) => {
@@ -1047,8 +1124,11 @@
                     `;
                 }).join('');
                 
+                console.log("Transactions loaded successfully from server");
+                return true;
             } catch (error) {
                 console.error('Error loading transactions:', error);
+                return false;
             }
         }
 
@@ -1129,6 +1209,34 @@
                 e.preventDefault();
                 showAddForm('expense');
             }
+        });
+        
+        // Function to check if this is the first login on this device
+        function checkFirstLogin() {
+            const username = '{{ user.username }}';
+            const loginKey = `budgetTracker_deviceLogin_${username}`;
+            
+            if (!localStorage.getItem(loginKey)) {
+                // This is the first login on this device
+                console.log('First login on this device detected');
+                localStorage.setItem(loginKey, new Date().toISOString());
+                
+                // Show a welcome message
+                showNotification('Welcome back! Syncing your data across devices...', 'info');
+                
+                // Attempt to sync data from server
+                setTimeout(() => {
+                    syncLocalDataToServer();
+                }, 2000);
+            }
+        }
+        
+        // Call checkFirstLogin when the app initializes
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentDate();
+            initializeUserDropdown();
+            initializeApp();
+            checkFirstLogin();
         });
     </script>
 </body>
