@@ -262,7 +262,7 @@
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div id="userDropdown" class="absolute right-0 top-full mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl hidden transition-all duration-300 z-50">
+                        <div id="userDropdown" class="dropdown-menu fixed right-4 sm:absolute sm:right-0 top-20 sm:top-full mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl hidden transition-all duration-300 z-50">
                             <div class="p-2">
                                 <div class="px-3 py-2 border-b border-gray-700/50 mb-2">
                                     <p class="text-sm text-gray-400">Signed in as</p>
@@ -556,10 +556,33 @@
             const userDropdown = document.getElementById('userDropdown');
             
             if (userMenuButton && userDropdown) {
+                // Make sure dropdown is hidden on page load
+                userDropdown.classList.add('hidden');
+                
                 userMenuButton.addEventListener('click', function(e) {
                     e.preventDefault();
-                    userDropdown.classList.toggle('hidden');
+                    e.stopPropagation(); // Prevent event from bubbling
+                    
+                    // Toggle dropdown visibility
+                    const isHidden = userDropdown.classList.contains('hidden');
+                    
+                    // Close all dropdowns first
+                    const allDropdowns = document.querySelectorAll('.dropdown-menu');
+                    allDropdowns.forEach(dropdown => dropdown.classList.add('hidden'));
+                    
+                    // Then open this one if it was hidden
+                    if (isHidden) {
+                        userDropdown.classList.remove('hidden');
+                    }
                 });
+                
+                // Make logout link work properly
+                const logoutLink = userDropdown.querySelector('a[href*="logout"]');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', function(e) {
+                        e.stopPropagation(); // Don't stop the link click itself
+                    });
+                }
                 
                 // Close dropdown when clicking outside
                 document.addEventListener('click', function(e) {
@@ -573,7 +596,10 @@
         // Initialize app with database check for Vercel
         async function initializeApp() {
             try {
-                // Check if we're on Vercel by trying the health endpoint
+                // Always load from localStorage first to ensure data is visible immediately
+                await loadLocalData();
+                
+                // Then try to fetch from server
                 const healthResponse = await fetch('/health/');
                 const healthData = await healthResponse.json();
                 
@@ -581,7 +607,7 @@
                 
                 if (healthData.status === 'ok') {
                     console.log('Database initialized successfully');
-                    // Load data from server first
+                    // Load data from server
                     await loadSummary();
                     await loadTransactions();
                     
@@ -592,17 +618,11 @@
                 } else {
                     console.error('Database initialization failed:', healthData.message);
                     showNotification('Database initialization failed, using local storage', 'error');
-                    await loadLocalData();
                 }
             } catch (error) {
                 console.error('Health check failed:', error);
-                // Fallback: try to load data anyway
-                try {
-                    await loadSummary();
-                    await loadTransactions();
-                } catch {
-                    await loadLocalData();
-                }
+                // We already loaded from localStorage, so just show a notification
+                showNotification('Could not connect to server, using local data', 'info');
             }
         }
 
