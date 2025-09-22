@@ -20,14 +20,57 @@ from django.core.management import execute_from_command_line
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'budget_tracker.settings')
 
-# Run migrations automatically on Vercel
+# Initialize Django
+application = get_wsgi_application()
+
+# Run migrations and create sample data automatically on Vercel
 if os.environ.get('VERCEL'):
     try:
-        execute_from_command_line(['manage.py', 'migrate', '--noinput'])
+        # Import here to avoid circular imports
+        from django.core.management import call_command
+        from django.db import connection
+        
+        # Run migrations
+        call_command('migrate', '--noinput', verbosity=0)
+        
+        # Create sample data for demo
+        from expenses.models import Expense
+        from decimal import Decimal
+        
+        # Check if we need to create sample data
+        if not Expense.objects.exists():
+            sample_data = [
+                {
+                    'description': 'Monthly Salary',
+                    'amount': Decimal('50000.00'),
+                    'category': 'salary',
+                    'transaction_type': 'income'
+                },
+                {
+                    'description': 'Grocery Shopping',
+                    'amount': Decimal('2500.00'),
+                    'category': 'food',
+                    'transaction_type': 'expense'
+                },
+                {
+                    'description': 'Transportation',
+                    'amount': Decimal('1200.00'),
+                    'category': 'transport',
+                    'transaction_type': 'expense'
+                },
+                {
+                    'description': 'Utilities Bill',
+                    'amount': Decimal('3500.00'),
+                    'category': 'bills',
+                    'transaction_type': 'expense'
+                }
+            ]
+            
+            for data in sample_data:
+                Expense.objects.create(**data)
+                
     except Exception as e:
-        print(f"Migration error: {e}")
-
-application = get_wsgi_application()
+        print(f"Initialization error on Vercel: {e}")
 
 # Vercel handler
 app = application

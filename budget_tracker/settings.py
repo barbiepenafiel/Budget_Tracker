@@ -100,6 +100,9 @@ if os.environ.get('VERCEL'):
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': ':memory:',
+            'OPTIONS': {
+                'timeout': 20,
+            }
         }
     }
 else:

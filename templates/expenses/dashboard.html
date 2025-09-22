@@ -484,9 +484,31 @@
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
-            loadSummary();
-            loadTransactions();
+            initializeApp();
         });
+
+        // Initialize app with database check for Vercel
+        async function initializeApp() {
+            try {
+                // Check if we're on Vercel by trying the health endpoint
+                const healthResponse = await fetch('/health/');
+                const healthData = await healthResponse.json();
+                
+                if (healthData.status === 'ok') {
+                    console.log('Database initialized successfully');
+                    loadSummary();
+                    loadTransactions();
+                } else {
+                    console.error('Database initialization failed:', healthData.message);
+                    showNotification('Database initialization failed', 'error');
+                }
+            } catch (error) {
+                console.error('Health check failed:', error);
+                // Fallback: try to load data anyway
+                loadSummary();
+                loadTransactions();
+            }
+        }
 
         function updateCurrentDate() {
             const now = new Date();
@@ -558,6 +580,21 @@
                 transaction_type: currentTransactionType
             };
             
+            console.log('Submitting transaction data:', data);
+            
+            // Validate required fields
+            if (!data.description || !data.amount || !data.category || !data.transaction_type) {
+                console.error('Missing required fields:', data);
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            if (isNaN(data.amount) || data.amount <= 0) {
+                console.error('Invalid amount:', data.amount);
+                showNotification('Please enter a valid amount', 'error');
+                return;
+            }
+            
             try {
                 const response = await fetch('/api/expenses/', {
                     method: 'POST',
@@ -567,7 +604,12 @@
                     body: JSON.stringify(data)
                 });
                 
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
                 if (response.ok) {
+                    const responseData = await response.json();
+                    console.log('Success response:', responseData);
                     hideAddForm();
                     loadSummary();
                     loadTransactions();
@@ -575,11 +617,12 @@
                 } else {
                     const errorData = await response.text();
                     console.error('Server error:', errorData);
+                    console.error('Response headers:', [...response.headers.entries()]);
                     showNotification(`Error adding transaction: ${response.status}`, 'error');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                showNotification('Error adding transaction', 'error');
+                console.error('Network/parsing error:', error);
+                showNotification('Network error adding transaction', 'error');
             }
         });
 
