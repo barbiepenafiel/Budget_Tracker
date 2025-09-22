@@ -869,29 +869,68 @@
             }
 
             try {
+                console.log('Attempting to reset data...');
+                showNotification('Processing reset request...', 'info');
+                
                 // Clear server data
                 const response = await fetch('/api/reset/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCsrfToken()
-                    }
+                    },
+                    credentials: 'include'  // Ensure cookies are sent
                 });
 
-                const result = await response.json();
+                // Log raw response for debugging
+                console.log('Reset API response status:', response.status);
+                
+                // Handle different HTTP status codes
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        console.error('CSRF token validation failed');
+                        throw new Error('Authentication error. Please refresh the page and try again.');
+                    } else if (response.status === 401) {
+                        console.error('User not authenticated');
+                        throw new Error('You need to be logged in. Please refresh the page and try again.');
+                    } else if (response.status === 500) {
+                        console.error('Internal server error');
+                        throw new Error('Server error. Please check the logs and try again.');
+                    } else {
+                        console.error('Server error:', response.status);
+                        throw new Error(`Server error (${response.status}). Please try again later.`);
+                    }
+                }
+                
+                // Parse JSON response
+                let result;
+                try {
+                    result = await response.json();
+                    console.log('Reset API response data:', result);
+                } catch (jsonError) {
+                    console.error('Failed to parse server response:', jsonError);
+                    throw new Error('Invalid server response. Please try again.');
+                }
 
-                if (response.ok && result.status === 'success') {
+                // Process successful response
+                if (result.status === 'success') {
                     // Clear localStorage with user-specific key
                     const username = '{{ user.username }}';
                     const storageKey = `budgetTracker_transactions_${username}`;
                     localStorage.removeItem(storageKey);
                     
                     // Also try clearing with the username from the server response
-                    // This helps with Vercel deployments where session username might be different
                     if (result.username) {
                         const serverStorageKey = `budgetTracker_transactions_${result.username}`;
                         localStorage.removeItem(serverStorageKey);
                     }
+                    
+                    // Clear any other budget tracker data in localStorage
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('budgetTracker_')) {
+                            localStorage.removeItem(key);
+                        }
+                    });
                     
                     // Reset UI to zero state
                     resetUIToZero();
@@ -900,27 +939,47 @@
                     updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
                     
                     // Clear transactions list 
-                    document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
+                    document.getElementById('transactions-list').innerHTML = 
+                        '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
                     
-                    showNotification('All data reset successfully! Starting fresh.', 'success');
+                    const deletedCount = result.deleted_count || 0;
+                    showNotification(`All data reset successfully! ${deletedCount} transactions deleted.`, 'success');
                 } else {
-                    showNotification('Failed to reset data: ' + (result.message || 'Unknown error'), 'error');
+                    // Handle server-reported error
+                    console.error('Server reported error:', result.message);
+                    const errorType = result.error_type || 'unknown';
+                    showNotification(`Failed to reset data (${errorType}): ${result.message}`, 'error');
                 }
             } catch (error) {
+                // Handle client-side or network error
                 console.error('Reset error:', error);
                 
-                // If server fails, at least clear localStorage
-                const username = '{{ user.username }}';
-                const storageKey = `budgetTracker_transactions_${username}`;
-                localStorage.removeItem(storageKey);
-                
-                // Reset UI to zero state
-                resetUIToZero();
-                
-                // Ensure all UI elements are refreshed and synchronized
-                updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
-                
-                showNotification('Data reset locally (server may be unavailable)', 'info');
+                // Attempt local reset as fallback
+                try {
+                    // Clear localStorage with user-specific key
+                    const username = '{{ user.username }}';
+                    const storageKey = `budgetTracker_transactions_${username}`;
+                    localStorage.removeItem(storageKey);
+                    
+                    // Clear any other budget tracker data
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('budgetTracker_')) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                    
+                    // Reset UI to zero state
+                    resetUIToZero();
+                    
+                    // Update UI and show notification
+                    updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
+                    document.getElementById('transactions-list').innerHTML = 
+                        '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
+                    
+                    showNotification('Server error: ' + error.message + '. Data reset locally only.', 'warning');
+                } catch (localError) {
+                    showNotification('Failed to reset data: ' + error.message, 'error');
+                }
             }
         }
 
