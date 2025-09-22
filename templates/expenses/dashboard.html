@@ -258,30 +258,14 @@
                     
                     <!-- User Menu -->
                     <div class="relative" id="userMenuContainer">
-                        <button id="userMenuButton" class="flex items-center space-x-3 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-all duration-300">
+                        <a href="{% url 'authentication:logout' %}" 
+                           class="flex items-center space-x-3 bg-red-500/20 hover:bg-red-500/40 px-4 py-2 rounded-lg transition-all duration-300 border border-red-500/30">
                             <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                                 <i class="fas fa-user text-white text-sm"></i>
                             </div>
                             <span class="text-white font-medium">{{ user.username }}</span>
-                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                        </button>
-                        
-                        <!-- Dropdown Menu -->
-                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl hidden transition-all duration-300 z-[100]">
-                            <div class="p-2">
-                                <div class="px-3 py-2 border-b border-gray-700/50 mb-2">
-                                    <p class="text-sm text-gray-400">Signed in as</p>
-                                    <p class="text-white font-medium">{{ user.username }}</p>
-                                    {% if user.email %}
-                                        <p class="text-xs text-gray-400">{{ user.email }}</p>
-                                    {% endif %}
-                                </div>
-                                <a href="{% url 'authentication:logout' %}" class="flex items-center space-x-2 px-3 py-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors duration-200">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    <span>Sign Out</span>
-                                </a>
-                            </div>
-                        </div>
+                            <i class="fas fa-sign-out-alt text-white"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -551,76 +535,41 @@
         // Call checkFirstLogin when the app initializes
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
-            initializeUserDropdown();
             initializeApp();
             checkFirstLogin();
         });
-        
-        // Initialize user dropdown menu with click event
-        function initializeUserDropdown() {
-            const userMenuButton = document.getElementById('userMenuButton');
-            const userDropdown = document.getElementById('userDropdown');
-            
-            if (userMenuButton && userDropdown) {
-                // Make sure dropdown is hidden on page load
-                userDropdown.classList.add('hidden');
-                
-                // Add a more visible style to make the button more noticeable
-                userMenuButton.classList.add('relative');
-                
-                userMenuButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation(); // Prevent event from bubbling
-                    
-                    // Toggle dropdown visibility
-                    userDropdown.classList.toggle('hidden');
-                    
-                    // Add temporary highlight to show the button was clicked
-                    userMenuButton.classList.add('ring-2', 'ring-blue-500');
-                    setTimeout(() => {
-                        userMenuButton.classList.remove('ring-2', 'ring-blue-500');
-                    }, 300);
-                });
-                
-                // Make logout link more prominent and easier to click
-                const logoutLink = userDropdown.querySelector('a[href*="logout"]');
-                if (logoutLink) {
-                    logoutLink.classList.add('font-bold', 'py-3');
-                    
-                    // Ensure the click passes through properly
-                    logoutLink.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        console.log('Logout link clicked');
-                        // Add a small delay to ensure the click registers
-                        setTimeout(() => {
-                            window.location.href = logoutLink.getAttribute('href');
-                        }, 100);
-                    });
-                }
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-                        userDropdown.classList.add('hidden');
-                    }
-                });
-            }
-        }
 
         // Initialize app with database check for Vercel
         async function initializeApp() {
             try {
                 // Always try to load from localStorage first for immediate display
-                await loadLocalData();
+                const localDataExists = await loadLocalData();
                 
                 // Then try to fetch from server to ensure cross-device syncing
                 console.log("Attempting to load data from server...");
-                const summarySuccess = await loadSummary();
-                const transactionsSuccess = await loadTransactions();
+                let serverDataLoaded = false;
                 
-                if (!summarySuccess || !transactionsSuccess) {
-                    console.log("Server data loading failed, staying with localStorage data");
-                    showNotification('Using locally stored data', 'info');
+                try {
+                    const summarySuccess = await loadSummary();
+                    const transactionsSuccess = await loadTransactions();
+                    
+                    serverDataLoaded = summarySuccess && transactionsSuccess;
+                    
+                    if (!serverDataLoaded) {
+                        console.log("Server data loading failed, staying with localStorage data");
+                        if (localDataExists) {
+                            showNotification('Using locally stored data', 'info');
+                        }
+                    } else {
+                        // If server data loaded successfully, save it to localStorage as a backup
+                        console.log("Server data loaded successfully, saving to localStorage");
+                        await syncServerDataToLocalStorage();
+                    }
+                } catch (error) {
+                    console.error("Error loading from server:", error);
+                    if (localDataExists) {
+                        showNotification('Using locally stored data', 'info');
+                    }
                 }
                 
                 // Run health check to see if we should sync localStorage to server
@@ -631,14 +580,17 @@
                     console.log('Health check response:', healthData);
                     
                     if (healthData.status === 'ok') {
-                        if (healthData.expense_count === 0) {
-                            // If server has no data but we have local data, sync it up
+                        // If server has no expenses but we have local data, sync it up
+                        if (healthData.total_expenses_in_system === 0 && localDataExists) {
+                            console.log("Server has no data but localStorage does, syncing up");
                             await syncLocalDataToServer();
                         }
                     }
                 } catch (error) {
                     console.error('Health check failed:', error);
-                    showNotification('Could not connect to server, using local data only', 'info');
+                    if (localDataExists) {
+                        showNotification('Could not connect to server, using local data only', 'info');
+                    }
                 }
             } catch (error) {
                 console.error('Application initialization error:', error);
@@ -651,15 +603,31 @@
             try {
                 const username = '{{ user.username }}';
                 const storageKey = `budgetTracker_transactions_${username}`;
-                const localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                localTransactions.push({
+                let localTransactions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                
+                // If transaction already has ID and date_created, use those
+                // Otherwise add them
+                const newTransaction = {
                     ...transaction,
-                    id: Date.now(),
-                    date_created: new Date().toISOString()
-                });
+                    id: transaction.id || Date.now(),
+                    date_created: transaction.date_created || new Date().toISOString(),
+                    date: transaction.date || new Date().toISOString() // For consistency with server format
+                };
+                
+                // Add the new transaction
+                localTransactions.push(newTransaction);
+                
+                // Sort by date (newest first)
+                localTransactions.sort((a, b) => new Date(b.date_created) - new Date(a.date_created));
+                
+                // Store back in localStorage
                 localStorage.setItem(storageKey, JSON.stringify(localTransactions));
+                
+                console.log('Saved transaction to localStorage:', newTransaction);
+                return true;
             } catch (error) {
                 console.error('Failed to save to localStorage:', error);
+                return false;
             }
         }
 
@@ -673,13 +641,43 @@
                 if (localTransactions.length > 0) {
                     displayLocalTransactions(localTransactions);
                     calculateLocalSummary(localTransactions);
-                    showNotification('Loaded data from local storage', 'info');
+                    console.log(`Loaded ${localTransactions.length} transactions from localStorage`);
+                    return true;
                 } else {
                     // Show empty state
                     document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
+                    return false;
                 }
             } catch (error) {
                 console.error('Failed to load from localStorage:', error);
+                return false;
+            }
+        }
+
+        // Sync server data to localStorage
+        async function syncServerDataToLocalStorage() {
+            try {
+                const username = '{{ user.username }}';
+                const storageKey = `budgetTracker_transactions_${username}`;
+                
+                // Get transactions from server
+                const response = await fetch('/api/expenses/');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch server data');
+                }
+                
+                const transactions = await response.json();
+                
+                if (transactions.length > 0) {
+                    // Save server transactions to localStorage
+                    localStorage.setItem(storageKey, JSON.stringify(transactions));
+                    console.log(`Saved ${transactions.length} transactions from server to localStorage`);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Failed to sync server data to localStorage:', error);
+                return false;
             }
         }
 
@@ -706,11 +704,20 @@
                     let syncedCount = 0;
                     
                     for (const transaction of localTransactions) {
+                        // Skip transactions that already have an ID that's not a timestamp (likely server-generated)
+                        if (transaction.id && !isNaN(transaction.id) && transaction.id > 1000000000000) {
+                            console.log('Skipping transaction that appears to be local-only:', transaction.id);
+                            continue;
+                        }
+                        
                         const { id, date_created, ...transactionData } = transaction;
                         try {
                             const response = await fetch('/api/expenses/', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCsrfToken()
+                                },
                                 body: JSON.stringify(transactionData)
                             });
                             
@@ -723,10 +730,10 @@
                     }
                     
                     // Reload from server
-                    await loadSummary();
-                    await loadTransactions();
-                    
                     if (syncedCount > 0) {
+                        await loadSummary();
+                        await loadTransactions();
+                        
                         showNotification(`Synced ${syncedCount} transactions to server. Your data is now available on all devices.`, 'success');
                     }
                 }
@@ -849,6 +856,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
                     }
                 });
 
@@ -863,9 +871,12 @@
                     // Reset UI to zero state
                     resetUIToZero();
                     
+                    // Ensure all UI elements are refreshed and synchronized
+                    updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
+                    
                     showNotification('All data reset successfully! Starting fresh.', 'success');
                 } else {
-                    throw new Error(result.message || 'Failed to reset data');
+                    showNotification('Failed to reset data: ' + (result.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
                 console.error('Reset error:', error);
@@ -874,7 +885,12 @@
                 const username = '{{ user.username }}';
                 const storageKey = `budgetTracker_transactions_${username}`;
                 localStorage.removeItem(storageKey);
+                
+                // Reset UI to zero state
                 resetUIToZero();
+                
+                // Ensure all UI elements are refreshed and synchronized
+                updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
                 
                 showNotification('Data reset locally (server may be unavailable)', 'info');
             }
@@ -890,8 +906,14 @@
             // Reset progress bars
             updateProgressBars({ income_total: 0, expense_total: 0, balance: 0 });
             
-            // Clear transactions list
+            // Clear transactions list with a clean empty state message
             document.getElementById('transactions-list').innerHTML = '<p class="text-gray-400 text-center py-8">No transactions found. Add some transactions to get started!</p>';
+            
+            // Reset any other UI elements that might show financial data
+            document.getElementById('spending-percentage').textContent = '0%';
+            document.getElementById('savings-percentage').textContent = '0%';
+            document.getElementById('spending-progress').style.setProperty('--progress-width', '0%');
+            document.getElementById('savings-progress').style.setProperty('--progress-width', '0%');
         }
 
         function updateCurrentDate() {
@@ -981,11 +1003,26 @@
                 return;
             }
             
+            // Always save to localStorage first for immediate feedback
+            const localTransaction = {
+                ...data,
+                id: Date.now(), // Use timestamp as temporary ID
+                date_created: new Date().toISOString(),
+                date: new Date().toISOString() // Add date field to match server format
+            };
+            saveToLocalStorage(localTransaction);
+            
+            // Hide form and update UI immediately from localStorage
+            hideAddForm();
+            await loadLocalData();
+            
+            // Now try to save to server
             try {
                 const response = await fetch('/api/expenses/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
                     },
                     body: JSON.stringify(data)
                 });
@@ -997,35 +1034,23 @@
                     const responseData = await response.json();
                     console.log('Success response:', responseData);
                     
-                    // Save to localStorage as backup
-                    saveToLocalStorage(data);
+                    // Sync with server data
+                    await syncServerDataToLocalStorage();
                     
-                    hideAddForm();
-                    
-                    // Always reload from server to ensure consistent data across devices
+                    // Reload data from server to ensure consistent data across devices
                     const summarySuccess = await loadSummary();
                     const transactionsSuccess = await loadTransactions();
                     
-                    if (!summarySuccess || !transactionsSuccess) {
-                        // If server data loading fails, fall back to localStorage
-                        await loadLocalData();
+                    if (summarySuccess && transactionsSuccess) {
+                        showNotification('Transaction added successfully! Your data is synced across devices.', 'success');
+                    } else {
+                        showNotification('Transaction saved. Server sync may be incomplete.', 'info');
                     }
-                    
-                    showNotification('Transaction added successfully! Your data is synced across devices.', 'success');
                 } else {
-                    // If server fails, save to localStorage only
-                    console.error('Server failed, saving to localStorage only');
-                    saveToLocalStorage(data);
-                    hideAddForm();
-                    await loadLocalData();
-                    showNotification('Transaction saved locally (server unavailable)', 'info');
+                    showNotification('Transaction saved locally (server error)', 'info');
                 }
             } catch (error) {
                 console.error('Network/parsing error:', error);
-                // Save to localStorage as fallback
-                saveToLocalStorage(data);
-                hideAddForm();
-                await loadLocalData();
                 showNotification('Transaction saved locally (network error)', 'info');
             }
         });
@@ -1173,9 +1198,25 @@
         }
 
         function refreshTransactions() {
-            loadSummary();
-            loadTransactions();
-            showNotification('Data refreshed!', 'info');
+            // First try to load from server
+            loadSummary().then(summarySuccess => {
+                loadTransactions().then(transactionsSuccess => {
+                    if (summarySuccess && transactionsSuccess) {
+                        // If server data loaded successfully, save it to localStorage
+                        syncServerDataToLocalStorage();
+                        showNotification('Data refreshed from server!', 'success');
+                    } else {
+                        // If server data loading fails, fall back to localStorage
+                        loadLocalData();
+                        showNotification('Using locally stored data (server unavailable)', 'info');
+                    }
+                });
+            }).catch(error => {
+                console.error('Error refreshing data:', error);
+                // Fall back to localStorage
+                loadLocalData();
+                showNotification('Using locally stored data (server error)', 'info');
+            });
         }
 
         function showNotification(message, type = 'info') {
@@ -1204,6 +1245,11 @@
             }, 3000);
         }
 
+        // Get CSRF Token from meta tag
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
+        
         // Close modal when clicking outside
         document.getElementById('transaction-modal').addEventListener('click', function(e) {
             if (e.target === this) {
@@ -1249,7 +1295,6 @@
         // Call checkFirstLogin when the app initializes
         document.addEventListener('DOMContentLoaded', function() {
             updateCurrentDate();
-            initializeUserDropdown();
             initializeApp();
             checkFirstLogin();
         });

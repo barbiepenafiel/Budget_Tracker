@@ -49,7 +49,7 @@ class UserLoginAttempt(models.Model):
             self.save()
             return False
         
-        return True
+        return self.is_locked
 
     def time_until_unlock(self):
         """Get remaining lockout time"""

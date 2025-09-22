@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
@@ -43,6 +44,13 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('expenses:dashboard')
     
+    # Clear any "Invalid credentials" messages from expired sessions
+    storage = messages.get_messages(request)
+    for message in storage:
+        # Remove only the invalid credentials messages
+        if "Invalid credentials" in message.message:
+            storage.used = True
+    
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -65,13 +73,17 @@ def login_view(request):
                 
                 login(request, user)
                 messages.success(request, f'Welcome back, {user.username}!')
+                
+                # Set a session cookie to remember the login
+                request.session.set_expiry(60 * 60 * 24 * 14)  # 14 days
+                
                 return redirect('expenses:dashboard')
         else:
             # Handle failed login attempt
             username = request.POST.get('username')
             if username:
                 try:
-                    user = UserLoginAttempt.objects.select_related('user').get(user__username=username).user
+                    user = User.objects.get(username=username)
                     login_attempt, created = UserLoginAttempt.objects.get_or_create(user=user)
                     login_attempt.add_failed_attempt()
                     
@@ -80,7 +92,7 @@ def login_view(request):
                         messages.error(request, f'Invalid credentials. {remaining_attempts} attempts remaining.')
                     else:
                         messages.error(request, 'Account locked due to too many failed attempts.')
-                except:
+                except User.DoesNotExist:
                     messages.error(request, 'Invalid credentials.')
             else:
                 messages.error(request, 'Please enter valid credentials.')
@@ -93,7 +105,13 @@ def login_view(request):
 def logout_view(request):
     """User logout view"""
     username = request.user.username
+    
+    # Clear all session data
+    request.session.flush()
+    
+    # Django's logout function
     logout(request)
+    
     messages.success(request, f'Goodbye, {username}! You have been logged out successfully.')
     return redirect('authentication:login')
 
