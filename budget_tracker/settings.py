@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-afppn=v7b6be5se&u8%96e#qa_(4xcn@toruqtih(h1g*w8c8i')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() in ['true', '1', 'yes']
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ['true', '1', 'yes']
 
 ALLOWED_HOSTS = ['*']
 
@@ -54,6 +54,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Security settings for production
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 ROOT_URLCONF = 'budget_tracker.urls'
 
 TEMPLATES = [
@@ -81,7 +86,7 @@ WSGI_APPLICATION = 'budget_tracker.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': '/tmp/db.sqlite3',
     }
 }
 
@@ -122,7 +127,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles_build' / 'static'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # REST Framework configuration
 REST_FRAMEWORK = {

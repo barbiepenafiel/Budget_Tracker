@@ -4,6 +4,9 @@ from . import views
 app_name = 'expenses'
 
 urlpatterns = [
+    # Health check
+    path('health/', views.health_check, name='health-check'),
+    
     # Template views
     path('', views.dashboard, name='dashboard'),
     
